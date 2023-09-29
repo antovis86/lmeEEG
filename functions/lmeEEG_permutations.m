@@ -1,7 +1,8 @@
 function [rperms] = lmeEEG_permutations(SS,nperms)
-%lmeEEG_permutations: Compute unique permutations within subjects
+% lmeEEG_permutations: Compute unique permutations within subjects
+% This function is for stimuli-within-condition designs  
 % [Inputs]
-% - SS: Nominal variable of subject index
+% - SS: Nominal variable of subjects' indeces
 % - nperms: number of permutations
 % [Output]
 % -rperms: matrix with unique permutations 
