@@ -5,8 +5,8 @@
 % sEEG_all: Event-related EEG dataset simulated using the MATLAB-based toolbox SEREEGA (https://github.com/lrkrol/SEREEGA).  Simulated EEG data included a P1-N2-P3 complex with different intercepts for subjects (N = 30) and items (N = 10). Moreover, the P3 was differently modulated according to two experimental conditions (i.e., a two-level experimental factor: A vs. B). 
 % chanlocs: channel location variable (EEGLAB format)
 % sEEG_table: Event table specifying Subject (ID), Item, and experimental condition
-websave('sEEG_all.mat','https://osf.io/download/xkj95/'); load('sEEG_all.mat'); 
-websave('sEEG_table.mat', 'https://osf.io/download/8bkxz/'), load('sEEG_table.mat');
+websave('sEEG_all.mat','https://osf.io/download/5wqmy/'); load('sEEG_all.mat'); 
+websave('sEEG_table.mat', 'https://osf.io/download/ufpgr/'); load('sEEG_table.mat');
 addpath(['..',filesep,'functions']);
 
 
