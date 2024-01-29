@@ -7,10 +7,11 @@ function [rperms] = lmeEEG_permutations2(nperms,SS,Item)
 % - nperms: number of permutations
 % [Output]
 % -rperms: matrix with unique permutations
-
+disp('Compute permutation indeces')
 subj =unique(SS);
 it = unique(Item);
 rperms = nan(length(SS),nperms);
+
 for id = 1:length(subj)
     for itx = 1:length(it)
         idx = find(SS==subj(id)&Item==it(itx));
@@ -25,6 +26,7 @@ for id = 1:length(subj)
                 end
             end
         end
+        progressbar(id/length(subj));
         rperms(idx,:)=idx2;
     end
 end
