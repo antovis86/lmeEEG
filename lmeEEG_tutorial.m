@@ -1,19 +1,21 @@
 %% lmeEEG: Tutorial
-% 
-% 
+%
+%
 % Download input files:
-% sEEG_all: Event-related EEG dataset simulated using the MATLAB-based toolbox SEREEGA (https://github.com/lrkrol/SEREEGA).  Simulated EEG data included a P1-N2-P3 complex with different intercepts for subjects (N = 30) and items (N = 10). Moreover, the P3 was differently modulated according to two experimental conditions (i.e., a two-level experimental factor: A vs. B). 
+% sEEG_all: Event-related EEG dataset simulated using the MATLAB-based toolbox SEREEGA (https://github.com/lrkrol/SEREEGA).  Simulated EEG data included a P1-N2-P3 complex with different intercepts for subjects (N = 30) and items (N = 10). Moreover, the P3 was differently modulated according to two experimental conditions (i.e., a two-level experimental factor: A vs. B).
 % chanlocs: channel location variable (EEGLAB format)
 % sEEG_table: Event table specifying Subject (ID), Item, and experimental condition
-websave('sEEG_all.mat','https://osf.io/download/5wqmy/'); load('sEEG_all.mat'); 
+websave('sEEG_all.mat','https://osf.io/download/5wqmy/'); load('sEEG_all.mat');
 websave('sEEG_table.mat', 'https://osf.io/download/ufpgr/'); load('sEEG_table.mat');
-addpath(['..',filesep,'functions']);
+addpath(['functions']);
 
 
 %% STEP 1
 % Conduct mixed models on each channel/timepoint combination.
 ID = nominal(sEEG_table.ID); Item=nominal(sEEG_table.Item); CON = categorical(sEEG_table.Condition);
 mEEG = nan(size(sEEG_all));
+disp('lmeEEG: Step 1')
+steps = size(sEEG_all,1); k = 0;
 for ch = 1:size(sEEG_all,1)
     parfor tpoint = 1:size(sEEG_all,2)
         EEG = double(squeeze(sEEG_all(ch,tpoint,:)));
@@ -21,6 +23,8 @@ for ch = 1:size(sEEG_all,1)
         m = fitlme(EEG,'EEG~CON+(1|ID)+(1|Item)');
         mEEG(ch,tpoint,:) = fitted(m,'Conditional',0)+residuals(m); % Extract marginal EEG
     end
+    k=k+1;
+    progressbar(k/steps)
 end
 
 % Extract design matrix X
@@ -30,16 +34,20 @@ m = fitlme(EEG,'EEG~CON+(1|ID)+(1|Item)');
 X = designMatrix(m);
 
 
-%% STEP 2 
+%% STEP 2
 % Perform mass univariate linear regressions on “marginal” EEG data.
 t_obs = nan(size(mEEG,1),size(mEEG,2),size(X,2));
 betas = nan(size(mEEG,1),size(mEEG,2),size(X,2));
 se = nan(size(mEEG,1),size(mEEG,2),size(X,2));
+disp('lmeEEG: Step 2')
+steps = size(mEEG,1); k = 0;
 for ch = 1:size(mEEG,1)
     parfor tpoint = 1:size(mEEG,2)
         EEG = squeeze(mEEG(ch,tpoint,:));
         [t_obs(ch,tpoint,:), betas(ch,tpoint,:), se(ch,tpoint,:)]=lmeEEG_regress(EEG,X)
     end
+    k=k+1;
+    progressbar(k/steps)
 end
 
 
@@ -49,13 +57,19 @@ nperms=2000; % number of permutations
 % [rperms] = lmeEEG_permutations(ID,nperms); % nperms within-subjects permutations of X (for stimuli-within-condition designs)
 [rperms] = lmeEEG_permutations2(nperms, ID, Item); % within subjects and items permutations of X (for fully-crossed designs)
 t_perms = nan(nperms,size(mEEG,1),size(mEEG,2),size(X,2)); % Initialize t-map
+steps = nperms*size(mEEG,1);
+k=0;
+disp('lmeEEG: Step 3')
 for p =1:nperms
     XX = X(rperms(:,p),:);
     for ch = 1:size(mEEG,1)
+        EEG_ch = squeeze(mEEG(ch,:,:));
         parfor tpoint = 1:size(mEEG,2)
-            EEG = squeeze(mEEG(ch,tpoint,:));
+            EEG = squeeze(EEG_ch(tpoint,:))';
             [t_perms(p,ch,tpoint,:)]=lmeEEG_regress(EEG,XX);
         end
+        k=k+1;
+        progressbar(k / steps)
     end
 end
 
