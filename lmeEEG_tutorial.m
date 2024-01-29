@@ -24,7 +24,7 @@ for ch = 1:size(sEEG_all,1)
         mEEG(ch,tpoint,:) = fitted(m,'Conditional',0)+residuals(m); % Extract marginal EEG
     end
     k=k+1;
-    progressbar(k/steps)
+    progressbar(k/steps) % progressbar.m is from ept_TFCE toolbox (https://github.com/Mensen/ept_TFCE-matlab)
 end
 
 % Extract design matrix X
