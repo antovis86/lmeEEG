@@ -1,21 +1,21 @@
 %% *lmeEEG: Tutorial*
-% *For details see:* https://doi.org/10.1016/j.jneumeth.2023.109991 
+% *For details see:* https://doi.org/10.1016/j.jneumeth.2023.109991
 % Download input files:
-%% 
-% * _sEEG_all_: Event-related EEG dataset simulated using the MATLAB-based toolbox 
-% SEREEGA (https://github.com/lrkrol/SEREEGA).  Simulated EEG data included a 
-% P1-N2-P3 complex with different intercepts for subjects (N = 30) and items (N 
-% = 10). Moreover, the P3 was differently modulated according to two experimental 
-% conditions (i.e., a two-level experimental factor: A vs. B). 
+%%
+% * _sEEG_all_: Event-related EEG dataset simulated using the MATLAB-based toolbox
+% SEREEGA (https://github.com/lrkrol/SEREEGA).  Simulated EEG data included a
+% P1-N2-P3 complex with different intercepts for subjects (N = 30) and items (N
+% = 10). Moreover, the P3 was differently modulated according to two experimental
+% conditions (i.e., a two-level experimental factor: A vs. B).
 % * _chanlocs_: channel location variable (EEGLAB format)
-% * _sEEG_table_: Event table specifying Subject (ID), Item, and experimental 
+% * _sEEG_table_: Event table specifying Subject (ID), Item, and experimental
 % condition
 
 websave('sEEG_all.mat','https://osf.io/download/5wqmy/'); load('sEEG_all.mat');
 websave('sEEG_table.mat', 'https://osf.io/download/ufpgr/'); load('sEEG_table.mat');
 addpath(['functions']);
-%% 
-% 
+%%
+%
 % STEP 1
 % *Conduct mixed models on each channel/timepoint combination.*
 
@@ -37,9 +37,9 @@ m = fitlme(EEG,'EEG~CON+(1|ID)+(1|Item)');
 X = designMatrix(m);
 
 clear EEG
-%% 
-% 
-% *STEP 2* 
+%%
+%
+% *STEP 2*
 % *Perform mass univariate linear regressions on “marginal” EEG data.*
 
 t_obs = nan(size(mEEG,1),size(mEEG,2),size(X,2));
@@ -51,8 +51,9 @@ for ch = 1:size(mEEG,1)
         [t_obs(ch,tpoint,:), betas(ch,tpoint,:), se(ch,tpoint,:)]=lmeEEG_regress(EEG,X)
     end
 end
-%% 
-% 
+
+%%
+%
 % STEP 3
 % *Perform permutation testing and apply TFCE*
 % This part requires ept_TFCE toolbox (https://github.com/Mensen/ept_TFCE-matlab)
@@ -65,17 +66,12 @@ ChN = ept_ChN2(chanlocs);
 [rperms] = lmeEEG_permutations2(nperms, ID, Item); % within subjects and items permutations of X (for fully-crossed designs)
 maxTFCE = nan(nperms,size(X,2));
 disp('Compute permutations')
+
 for p =1:nperms
     t_perms = nan(size(mEEG,1),size(mEEG,2),size(X,2));
     XX = X(rperms(:,p),:);
     for ch = 1:size(mEEG,1)
-        EEG_ch = squeeze(mEEG(ch,:,:));
-        t_perms_ch = nan(size(mEEG,2),size(X,2));
-        parfor tpoint = 1:size(mEEG,2)
-            EEG = EEG_ch(tpoint,:)';
-            [t_perms_ch(tpoint,:)]=lmeEEG_regress(EEG,XX);
-        end
-        t_perms(ch,:,:)= t_perms_ch;
+        t_perms(ch,:,:) =lmeEEG_regress(squeeze(mEEG(ch,:,:))',XX)';
     end
     for i = 2:size(X,2)
         TFCE_Perm = ept_mex_TFCE2D(t_perms(:,:,i), ChN,[0.66 2]);
@@ -83,7 +79,8 @@ for p =1:nperms
     end
     progressbar(p/nperms)
 end
-% 
+disp('Done')
+%
 % *TFCE results*
 
 for i = 2:size(X,2) % i from 2 since permutation testing of the intercept is not possible
@@ -93,8 +90,10 @@ for i = 2:size(X,2) % i from 2 since permutation testing of the intercept is not
         Results.(matlab.lang.makeValidName(m.CoefficientNames{i})) = lmeEEG_TFCE(squeeze(t_obs(:,:,:,i)),maxTFCE(:,i),chanlocs,[0.66 2]);
     end
 end
-%% 
-% 
+
+
+%%
+%
 % PLOT RESULTS
 
 mT = Results.CON_ConditionB.Obs;
@@ -114,12 +113,12 @@ set(gca,'ytick',1:19,'FontSize',8,'FontName','Arial');
 set(gca,'TickLength',[0 0]);
 set(gca,'XTick',linspace(1,101,6),'XTickLabel',0:200:1000,'FontSize',8,'FontName','Arial');
 cmap2=cmap; cmap2(129,:)=[.8 .8 .8];
-set(gca,'clim',[-max(abs(mT(:))) max(abs(mT(:)))],'colormap',cmap2) 
+set(gca,'clim',[-max(abs(mT(:))) max(abs(mT(:)))],'colormap',cmap2)
 yticklabels(tick_labels);
 xlabel("Time (ms)","FontWeight","bold","FontSize",10, "FontName","Arial");
 set(gca,'color','none')
 hc=colorbar;
-a = get(hc,'YTickLabel')
+a = get(hc,'YTickLabel');
 set(hc, 'colormap', cmap,'YTickLabel',a,'FontSize',8,'FontName','Arial');
 ylabel(hc,'t-value','FontWeight','bold','FontSize',10,'FontName','Arial');
 
